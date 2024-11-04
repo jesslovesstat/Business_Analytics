@@ -1,0 +1,351 @@
+---
+title: "Hita_Totaro_A1"
+author: "Xhesina Hita, Paolo Totaro"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    df_print: paged
+papersize: a4
+geometry: margin= 4 cm
+colorlinks: yes
+---
+
+```{r,echo=F, message=FALSE, warning=FALSE}
+
+library(car)
+library(ISLR)
+
+
+set.seed(1305)
+n=length(Carseats$Sales)
+
+nt=320
+train=sample(1:n, nt)
+
+# only numerical variable
+CarseatsS <- Carseats[train,-c(7,10,11)]
+
+```
+
+# Problem 1: Linear Regression
+
+## Own model
+
+In this first part was required to choose 3 of all the numerical independent variables.
+We start with an exploratory analysis of the data, we take into account the correlation between the numerical independent variables and our dependent variable Sales (unit sales at each location). We consider the values of the correlation found in the correlation matrix, correlation plot and real-life context. Then we select the variables which are more correlated with the dependent variable.
+
+*Note*: In this preliminary analysis we make no use of any model or any kind of tests.
+
+Taking a look at the correlation plot (Figure 1) we expect a linear relationship between Sales and Price (price company changes for car seats at each site), a quite strong negative correlation, since as we might expect in a real-life situation, as the price increases the unit sales decrease. When checking the value in the correlation matrix (Table 1) we notice indeed a value of -0.4546.
+
+The other variable that seems to be significantly correlated with Sales is Advertising (local advertising budget for company), as we can see from the plot, we await a positive moderate linear relation, therefore the higher the budget in advertising, the higher the number of sales of car seats; the value found in the correlation matrix is 0.2846. We believe that a higher budget for advertising increases the awareness of the customers regarding safety system for children and therefore it will make them more interested in the product.
+
+When considering the correlation between Age (average age of the local population) and Sales we don't notice from the correlation plot any significant trend, perhaps we catch a glimpse of a linear decrease in sales as the age increases. By taking a look at the correlation matrix with the actual values, we see a moderate negative relation between the 2 variables of -0.2394, this is a reasonable result since we expect that an older population corresponds to a lower number of children and therefore a lower number of sales of car seats. On the other hand, of course, a younger population will have more children and therefore a higher need of car seats.
+
+```{r, echo=F, message=F, warning=F}
+
+library(kableExtra)
+kableExtra::kable(cor(CarseatsS), booktabs=T, caption="Correlation matrix") %>%
+  kable_styling(latex_options = "scale_down")
+
+```
+
+```{r, echo=F, fig.cap="Correlation plot"}
+plot(CarseatsS, col="cornflowerblue", pch=".")
+```
+
+We don't expect any multicollinearity since, by looking at the correlation matrix (Table 1), the 3 variables aren't correlated one another.
+
+We left out of the model 4 variables since they don't seem to be correlated with the dependent variable Sales; in the correlation plot (Figure 1) we don't see any particular trend as each scatter plot seems to be very random.
+
+```{r echo=F}
+modelnostro <- lm(Sales ~ Price + Advertising + Age, CarseatsS)
+```
+
+```{r echo=F}
+knitr::kable(modelnostro$coefficients, caption="Reduced model coefficients (x)")
+```
+
+```{r echo=FALSE}
+knitr::kable(confint(modelnostro, level = 0.95), caption="Confidence intervals of reduced model coefficients")
+```
+
+Table 2 shows the coefficients of the variables, it can be observed that advertising has a greater effect on Sales than the other two variables.
+
+Table 3 supplies us with the values of the confidence intervals of the reduced model coefficients at 95% level, which means that there is approximately 95% chance that the given interval will contain the true values of the model coefficients. Since the confidence intervals of the three predictors don't contain the 0 value, we expect that the p-values of the t-tests will be significant.
+
+When fitting the model, the value of the F-statistic (66.06 with 3 and 316 degree of freedom) is pretty high, therefore the p-value is extremely low (2.2 e-16), meaning that at least one of the 3 coefficients of the variables is significantly different from 0 at a confidence level greater than 95%. When considering the t-values of each variable taken individually we also get pretty high results in term of absolute value, therefore the p-values are very low as well, meaning that each predictor has a significant effect on our dependent variable Sales again at confidence level of 95%.
+
+```{r echo=F, message=FALSE, warning=FALSE, comment=NA}
+summary(modelnostro)
+```
+
+We compute the Variance Inflation Factor for each predictor, values close to 1 indicate the absence of collinearity.
+For our model we get values very close to 1, therefore the hypothesis of multicollinearity can be dropped as we expected from the Correlation plot.
+
+```{r, echo=F, comment=NA}
+knitr::kable(t(data.frame(VIF=vif(modelnostro))))
+```
+
+We now proceed with the check of the 5 assumptions for the linear regression:
+
+1)  We build the plot of Residuals versus Fitted Values (A) in order to check the linear relationship between predictors and the dependent variable. As we can see from the generated plot, there seems to be a decreasing trend at the beginning which anyway stabilises around the 0 for the majority of the plot. Therefore since most of the residuals lie around the 0 line we consider appropriate the linearity assumption.
+
+2)  In order to check the homoscedasticity assumption that the disturbance terms have all the same variance and are not correlated to one another we build the Scale-Location plot (B) and check the pattern of the fitted line. In our case we get a pretty straight line since our points are all equally spread around the value 1, therefore there is no violation of the homoscedasticity assumption.
+
+3)  The normality assumption implies that the residuals of our model are normally distributed, in order to check this, we draw the QQ-plot (C) and check whether the quantiles of a standardized residuals approximately correspond to the quantiles of a standard normal distribution (the points in the QQ-plot lie inside the confidence interval). This is the case of our model, therefore, the normality assumption seems reasonable. In order to be more confident of our statement we can check the histogram of the residuals (D) and see whether they follow a normal distribution. In our case they do and therefore the assumption does not seem to be violated.
+
+4)  As we can see from the histogram (D) the expected value of the disturbance term is 0 hence the assumption on the exogeneity of the independent variables seems reasonable.
+
+5)  The last assumption to verify is that there is no exact linear relationship among any of the independent variable. In order to check this we inspect the correlation matrix (Table 1) of the predictors of our model and see if there is any linear correlation between Age, Advertising and Price. There isn't any, therefore, the assumption can be considered appropriate.
+
+```{r echo=F}
+res <- residuals(modelnostro)
+plot(modelnostro, which=1, col="dodgerblue2",
+     main="A")
+```
+
+```{r, echo=F}
+plot(modelnostro, which=3, main="B")
+```
+
+```{r, echo=F}
+qqPlot(res, id=F, main="C")
+
+```
+
+```{r echo=F}
+hist(res, main="D", col="lightpink")
+```
+
+
+## All possible variables
+
+First of all, we fit the full model with all the 7 numerical predictors. We consider the F-statistic and notice how big it is, with a very small p-value, this means that there is at least one coefficient significantly different from 0 at 95% level. Indeed, if we observe the p-values for the t-tests there are 5 significant beta coefficients, the only predictors which seem not to have a significant impact on Sales are Education (education level at each location) and Population (population size in a region). If we work with a significance level of 99%, the predictor Income is not significant anymore.
+
+We notice that even if we include all the numerical variables in the model, the ones we chose for the reduced one (Price, Advertising and Age) remain highly significant. 
+Advertising remains the variable that has the greater effect on Sales.
+
+```{r, echo=F, comment=NA}
+modelfull <- lm(Sales~., CarseatsS)
+summary(modelfull)
+```
+
+Since we are now considering the full model, we also have to look for multicollinearity which is not a good factor for our model. In this case we have multicollinearity, by taking a look at the correlation plot (Figure 1) of all the independent variables we notice that the only noticeable correlation is the one among Price and CompPrice (price charged by competitor at each location). The value of their correlation in 0.59 which is very high in comparison with the correlations among the other predictors, therefore we expect there is multicollinearity between these 2 variables.
+
+Another way to check for multicollinearity is buy exploiting Pearson correlation. From Table A we observe through the p-values that Advertising, Price, Age and Income are highly correlated with the dependent variable. Then, if we consider the correlation among the independent variables, we see that Population is highly correlated with Advertising, CompPrice with Price, Age with CompPrice, Education with Population and Price with Age at significance level of 95%. Therefore, there is multicollinearity in the full model.
+
+Table A: p-values from Pearson Correlation
+```{r echo=F, message=FALSE, warning=FALSE}
+library(Hmisc)
+prova <- rcorr(as.matrix(CarseatsS), type="pearson")
+
+knitr::kable(t(round(as.data.frame(prova[3]), digits = 3)))
+```
+
+We now consider the Variance Inflation Factor in order to check our assumptions of multicollinearity. In Table B we see indeed that CompPrice and Price have the highest VIF and therefore we expect multicollinearity in the model.
+
+Table B: Variance Inflation Factors (VIF) of the dependent variables
+```{r, echo=F}
+knitr::kable(t(round(data.frame(VIF=vif(modelfull)), digits=4)))
+```
+
+
+We then check the assumptions of linear regression in the full model like we did for the reduced one, turns out the plots are quite similar and therefore the assumptions are fulfilled like in the reduced model.
+
+```{r, echo=F, include=F}
+resfull <- modelfull$residuals
+plot(modelfull, which = 1)
+qqPlot(modelfull)
+plot(modelfull, which = 3)
+
+```
+
+After fitting the full model, we can compare it with the reduced one. Both models fulfil the assumptions of linear regression, except for the full model where multicollinearity is present.
+In the full model we have too many predictors since some of them do not have any significant effect on the dependent variable Sales. When taking a look at the coefficient of Determination (R squared) we notice that in the full model it is 0.542 whereas in the reduced it is 0.385. This is due to the fact that when adding predictors to a model the value of R squared increases. If we consider the adjusted R squared that doesn't take into account the number of independent variables we have an increase of R squared anyway, this is due to the fact that part of the variability that was hidden in the disturbance term is now explained by some of the newly included predictors.
+
+We also check the value of the Residual Standard Error to get an estimate of the standard deviation of epsilon (error) from the average of the dependent variable Sales (Table C). The RSE for the reduced model is 2.17 and the RSE of the full model is 1.884. We now compute the percentage error by dividing each of these results by the average Sales (7.432); we then obtain the error percentages: 29.20% for the reduced model and 25.35% for the full one.
+
+Table C: Residual Standard Error of the two models (Reduced and Full)
+```{r, echo=F, comment=NA }
+knitr::kable(data.frame(Average_Sales=mean(CarseatsS$Sales), Percentage_Error_REDUCED=2.17/mean(CarseatsS$Sales)*100,
+           Percentage_Error_FULL=1.884/mean(CarseatsS$Sales)*100))
+```
+
+# Problem 2: Classification
+
+## KNN
+
+```{r,echo=F, include=F}
+library(class)
+library(gmodels)
+library(ROCR)
+
+CsS <- Carseats[,-c(7,10,11)]
+CsS$High <- ifelse(CsS$Sales>8, 1, 0)
+std.CsS <- data.frame(scale(CsS[2:8]))
+
+attach(std.CsS)
+```
+
+We now perform a K-nearest neighbor classification analysis.
+Our dependent variable is now High which assume value 1 if the number of unit sales is greater than 8 thousands and 0 otherwise.
+We train the model on the numerical predictors (standardized since they are in different scales) in the train data set in order to classify our data. The train data set is obtained considering part of the observations from the full data set, in our case 320 out of 400.
+
+We take odds values of k ranging from 1 to 13 (7 values), we only take the odds values to not get randomness in classification due to even values of k. From this analysis we get that the best classification comes from k=9 as we can see both in Table D and Figure E.
+
+Table D: Proportion of correct classifications for different values of K
+```{r echo=F, message=FALSE, warning=FALSE}
+attach(CsS)
+nearest1 <- knn(train=std.CsS[train,], test=std.CsS[-train,], cl=High[train], k=1)
+nearest3 <- knn(train=std.CsS[train,], test=std.CsS[-train,], cl=High[train], k=3)
+nearest5 <- knn(train=std.CsS[train,], test=std.CsS[-train,], cl=High[train], k=5)
+nearest7 <- knn(train=std.CsS[train,], test=std.CsS[-train,], cl=High[train], k=7)
+nearest9 <- knn(train=std.CsS[train,], test=std.CsS[-train,], cl=High[train], k=9)
+nearest11 <- knn(train=std.CsS[train,], test=std.CsS[-train,], cl=High[train], k=11)
+nearest13 <- knn(train=std.CsS[train,], test=std.CsS[-train,], cl=High[train], k=13)
+
+results <- data.frame(High[-train], nearest1, nearest3,
+                       nearest5, nearest7, nearest9, nearest11,
+                       nearest13)
+
+propor_1 <- sum(High[-train]==nearest1)/(n-nt)
+propor_3 <- sum(High[-train]==nearest3)/(n-nt)
+propor_5 <- sum(High[-train]==nearest5)/(n-nt)
+propor_7 <- sum(High[-train]==nearest7)/(n-nt)
+propor_9 <- sum(High[-train]==nearest9)/(n-nt)
+propor_11 <- sum(High[-train]==nearest11)/(n-nt)
+propor_13 <- sum(High[-train]==nearest13)/(n-nt)
+
+correct <- c(propor_1, propor_3, propor_5,
+                       propor_7, propor_9, propor_11, propor_13)
+
+```
+
+```{r, echo=F}
+knitr::kable(data.frame(propor_1, propor_3, propor_5,
+                       propor_7, propor_9, propor_11, propor_13))
+```
+
+```{r echo=F}
+plot(c(1,3,5,7,9,11,13),correct, type="b", col="red", pch=19, xlab="K", main="E")
+```
+
+Figure E: Proportion of Correct Classification with KNN
+
+We also performed KNN using Leave One Out Cross Validation in order to check the stability of our results using k values from 1 to 13. After setting a seed, we get that the best classification comes from k=11 as we can see from Table E and Figure F.
+
+Table E: Proportion of correctly classified values using Cross Validation
+```{r, echo=F}
+
+cv_propor <- dim(13)
+for(k in 1:13){
+  set.seed(1305)
+  pred <- knn.cv(std.CsS, High, k)
+  cv_propor[k] <- round(sum(High==pred)/n, digits=3)
+}
+
+pcorr <- t(data.frame(K=as.character(1:13), cv_propor))
+```
+
+```{r, echo=F}
+knitr::kable(t(pcorr))
+```
+
+
+
+
+```{r echo=F}
+plot(cv_propor, type="b", col="chartreuse3", pch=19, main="F")
+```
+
+Figure F: Proportion of Correct Classification with Cross Validation
+
+On average the portion of the correct classification in the two approaches are similar, we see a slightly higher value in the first approach using K=9.
+
+## Logistic Regression
+
+
+
+We now perform Multiple Logistic Regression on our data set. We carry out three classifications according to 3 different cut-points(0.5, 0.3 and 0.8) using High as dependent variable and the other numerical variables as predictors.
+We then obtain the values of Sensitivity and Specificity for each cut-point:
+
+- **0.5 cut-point**: Sensitivty=84.375% and Specificity=75% .
+The values we obtained correspond respectively to the *true positive rate* and *true negatvie rate*.
+
+- **0.3 cut-point**: Sensitivity=68.889% and Specificity=77.143%
+
+- **0.8 cutpoint**: Sensitivity=94.444% ans Specificity=64.516%
+
+
+```{r, echo=F, comment=NA}
+CsS <- CsS[,-1]
+High.f <- factor(CsS$High, levels=c(0,1), labels=c("No", "Yes"))
+Cnew <- data.frame(High.f, CsS[,1:7])
+
+logreg <- glm(High.f~., data=Cnew, subset=train, family=binomial)
+
+pred <- predict(logreg, type="response",
+                newdata=Cnew[-train,])
+```
+
+**Cutpoint 0.5**
+```{r, echo=F, comment=NA}
+pred.c <- ifelse(pred >= 0.5, "Yes", "No")
+
+CrossTable(pred.c, High.f[-train], expected=F, prop.chisq=F,
+           prop.t=F, prop.c=F, chisq=F, format="SPSS")
+```
+
+**Cutpoint 0.3**
+```{r, echo=F, comment=NA}
+pred.c3 <- ifelse(pred >= 0.3, "Yes", "No")
+
+
+CrossTable(pred.c3, High.f[-train], expected=F, prop.chisq=F,
+           prop.t=F, prop.c=F, chisq=F, format="SPSS")
+```
+
+**Cutpoint 0.8**
+```{r, echo=F, comment=NA}
+pred.c8 <- ifelse(pred >= 0.8, "Yes", "No")
+
+
+CrossTable(pred.c8, High.f[-train], expected=F, prop.chisq=F,
+           prop.t=F, prop.c=F, chisq=F, format="SPSS")
+```
+
+
+From Table E we get the proportion of correct classification for the three different cutpoints, we can observe that the best classification is obtained using 0.5 as cutpoint.
+
+Table E: Proportion of correct classification for each cutpoint
+```{r, echo=F}
+propcorrect05 <- (36+37)/80
+propcorrect03 <- (27+31)/80
+propcorrect08 <- (40+17)/80
+
+knitr::kable(data.frame(propcorrect05, propcorrect03, propcorrect08))
+```
+
+Figure 2 shows the plot of the ROC curve, we consider the area under the ROC curve (AUC) which represents the performance of the model, the bigger the area the better the performance. In this case the value of the AUC is 0.8380238
+
+```{r, echo=F, fig.cap="ROC-curve plot"}
+library(ROCR)
+prednew <- prediction(pred, CsS$High[-train])
+perf <- performance(prednew,"tpr","fpr")
+plot(perf, col="red", lty="solid", lwd=2, xaxs="i",
+     yaxs="i", main="ROC-curve")
+abline(a=0, b=1, lwd=2)
+```
+
+```{r echo=F, include=F, message=FALSE, warning=FALSE}
+library(AUC)
+auc(roc(pred, Cnew$High.f[-train]))
+```
+
+In conclusion, we compare the different classification approaches and find the best one for our data.
+Taking into consideration KNN and KNN using Cross-Validation we have already seen how there isn't a very high difference in proportion of correct classification. But if we have to choose we use a KNN with k=9.
+We now compare the KNN with the Multiple Logistic Regression approach using the proportion of correct classification at cut-point 0.5 (since it's the best compare to 0.3 and 0.8), the Multiple Linear Regression approach works extremely better than the KNN one, the proportions of correct classification are respectively 0.9125 and 0.725 .
+So for this data the best model seams to be a Multiple Logistic Regression with cut-point=0.5.
+
+
